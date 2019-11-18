@@ -1,0 +1,9 @@
+# docker-compose.yml
+
+version: "3"
+services:
+    mechmarket-notifier:
+        restart: always
+        build: .
+        env_file:
+            - ./.env
