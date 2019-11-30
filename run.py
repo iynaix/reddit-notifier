@@ -4,6 +4,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import re
 import os
+import ssl
 import time
 
 import praw
@@ -24,34 +25,43 @@ reddit_user_agent = os.environ["REDDIT_USER_AGENT"]
 subreddit = os.environ["SUBREDDIT"]
 
 
-def mailer(title, body, date, author, sub, link):
+def create_email(*, subject, from_email, to_email, text, html):
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = from_email
+    msg["To"] = to_email
+    part1 = MIMEText(text, "plain")
+    part2 = MIMEText(html, "html")
+    msg.attach(part1)
+    msg.attach(part2)
+
+    return msg
+
+
+def send_email(title, body, date, author, sub, link):
     try:
-        mail = smtplib.SMTP(email_server, email_port)
-        mail.ehlo()
-        mail.starttls()
-        mail.login(email_account, email_password)
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = title
-        msg["From"] = sender_name
-        msg["To"] = email_send_to
-        text = f"{body}\n\nSubmitted {date} by /u/{author}\nVia https://reddit.com/r/{sub} https://reddit.com{link}"
-        html = f"""<html>
-        <head></head>
-        <body>
-        <p>
-        <strong>{title}</strong><br/><br/>
-        {body}<br/><br/>
-        Submitted {date} by <a href='https://reddit.com/u/{author}'>/u/{author}</a><br/>
-        Via <a href='https://reddit.com/r/{sub}'>/r/{sub}</a> (<a href='https://reddit.com{link}'>Link</a>)
-        </p>
-        </body>
-        </html>"""
-        part1 = MIMEText(text, "plain")
-        part2 = MIMEText(html, "html")
-        msg.attach(part1)
-        msg.attach(part2)
-        mail.sendmail(email_account, email_send_to, msg.as_string())
-        mail.quit()
+        msg = create_email(
+            subject=title,
+            from_email=sender_name,
+            to_email=email_send_to,
+            text=f"{body}\n\nSubmitted {date} by /u/{author}\nVia https://reddit.com/r/{sub} https://reddit.com{link}",
+            html=f"""<html>
+            <head></head>
+            <body>
+            <p>
+            <strong>{title}</strong><br/><br/>
+            {body}<br/><br/>
+            Submitted {date} by <a href='https://reddit.com/u/{author}'>/u/{author}</a><br/>
+            Via <a href='https://reddit.com/r/{sub}'>/r/{sub}</a> (<a href='https://reddit.com{link}'>Link</a>)
+            </p>
+            </body>
+            </html>""",
+        )
+
+        context = ssl.create_default_context()
+        with smtplib.SMTP_SSL(email_server, email_port, context=context) as server:
+            server.login(email_account, email_password)
+            server.sendmail(email_account, email_send_to, msg.as_string())
     except Exception as e:
         print(e)
 
@@ -92,4 +102,4 @@ for submission in subreddit.stream.submissions():
         subject = ", ".join(
             [k.pattern if isinstance(k, re.Pattern) else k for k in key_matches]
         )
-        mailer(f"{subject} - {full_title}", body, date, author, sub, link)
+        send_email(f"{subject} - {full_title}", body, date, author, sub, link)
