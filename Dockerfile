@@ -1,5 +1,6 @@
-FROM python:3
+FROM python:alpine
 
+LABEL Name=mechmarket-notifier
 WORKDIR /usr/src/app
 
 COPY requirements.txt ./

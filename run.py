@@ -9,7 +9,7 @@ import time
 
 import praw
 
-from keywords import KEYWORDS
+from keywords import KEYWORDS, ARTISANS
 
 
 email_server = os.environ["EMAIL_SERVER"]
@@ -47,9 +47,8 @@ def send_email(title, body, date, author, sub, link):
             text=f"{body}\n\nSubmitted {date} by /u/{author}\nVia https://reddit.com/r/{sub} https://reddit.com{link}",
             html=f"""<html>
             <head></head>
-            <body>
-            <p>
-            <strong>{title}</strong><br/><br/>
+            <body style='background-color:#262626'>
+            <p style='color:#dddddd'>
             {body}<br/><br/>
             Submitted {date} by <a href='https://reddit.com/u/{author}'>/u/{author}</a><br/>
             Via <a href='https://reddit.com/r/{sub}'>/r/{sub}</a> (<a href='https://reddit.com{link}'>Link</a>)
@@ -66,6 +65,21 @@ def send_email(title, body, date, author, sub, link):
         print(e)
 
 
+def clean_body(body, key_matches=[]):
+    body = submission.selftext.replace("\n", "<br/>")
+
+    # highlight search terms
+    for key in key_matches:
+        if not isinstance(key, re.Pattern):
+            # ignore literal [ in string
+            if "[" not in key:
+                key = re.compile(key, re.IGNORECASE)
+
+        body = key.sub(r'<span style="background-color:yellow">\g<0></span>', body)
+
+    return body
+
+
 reddit = praw.Reddit(
     user_agent=reddit_user_agent,
     client_id=reddit_client_id,
@@ -80,11 +94,23 @@ for submission in subreddit.stream.submissions():
     title = full_title.split("[W]")[0]
 
     key_matches = set()
-    for key in KEYWORDS:
+    # match keywords in title
+    for key in KEYWORDS + ARTISANS:
         is_match = (
             bool(key.search(title))
             if isinstance(key, re.Pattern)
             else key.lower() in title.lower()
+        )
+
+        if start_time < submission.created_utc and is_match:
+            key_matches.add(key)
+
+    # match artisans in body
+    for key in ARTISANS:
+        is_match = (
+            bool(key.search(submission.selftext))
+            if isinstance(key, re.Pattern)
+            else key.lower() in submission.selftext.lower()
         )
 
         if start_time < submission.created_utc and is_match:
@@ -97,9 +123,10 @@ for submission in subreddit.stream.submissions():
         date = time.strftime(
             "%b %d %Y at %H:%M:%S", time.gmtime(submission.created_utc)
         )
-        body = submission.selftext.replace("\n", "<br/>")
+
+        body = clean_body(submission.selftext, key_matches)
         link = submission.permalink
         subject = ", ".join(
-            [k.pattern if isinstance(k, re.Pattern) else k for k in key_matches]
+            sorted(k.pattern if isinstance(k, re.Pattern) else k for k in key_matches)
         )
         send_email(f"{subject} - {full_title}", body, date, author, sub, link)

@@ -3,7 +3,10 @@
 version: "3"
 services:
     mechmarket-notifier:
+        image: mechmarket-notifier
         restart: always
-        build: .
+        build:
+            context: .
+            dockerfile: Dockerfile
         env_file:
             - ./.env
