@@ -47,8 +47,8 @@ def send_email(title, body, date, author, sub, link):
             text=f"{body}\n\nSubmitted {date} by /u/{author}\nVia https://reddit.com/r/{sub} https://reddit.com{link}",
             html=f"""<html>
             <head></head>
-            <body style='background-color:#262626'>
-            <p style='color:#dddddd'>
+            <body>
+            <p>
             {body}<br/><br/>
             Submitted {date} by <a href='https://reddit.com/u/{author}'>/u/{author}</a><br/>
             Via <a href='https://reddit.com/r/{sub}'>/r/{sub}</a> (<a href='https://reddit.com{link}'>Link</a>)
@@ -71,9 +71,7 @@ def clean_body(body, key_matches=[]):
     # highlight search terms
     for key in key_matches:
         if not isinstance(key, re.Pattern):
-            # ignore literal [ in string
-            if "[" not in key:
-                key = re.compile(key, re.IGNORECASE)
+            key = re.compile(key, re.IGNORECASE)
 
         body = key.sub(r'<span style="background-color:yellow">\g<0></span>', body)
 
@@ -91,7 +89,7 @@ start_time = time.time()
 for submission in subreddit.stream.submissions():
     full_title = submission.title
     # we aren't interested in wants (for now anyway)
-    title = full_title.split("[W]")[0]
+    title, _, title_want = full_title.partition("[W]")
 
     key_matches = set()
     # match keywords in title
