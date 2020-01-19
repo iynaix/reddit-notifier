@@ -71,7 +71,7 @@ def clean_body(body, key_matches=[]):
     # highlight search terms
     for key in key_matches:
         if not isinstance(key, re.Pattern):
-            key = re.compile(key, re.IGNORECASE)
+            key = re.compile(re.escape(key), re.IGNORECASE)
 
         body = key.sub(r'<span style="background-color:yellow">\g<0></span>', body)
 
