@@ -1,4 +1,4 @@
-# Reddit Notifier
+# Mechmarket Notifier
 
 Python bot to send notifications via email when keywords are found on /r/mechmarket.
 
@@ -14,3 +14,7 @@ Python bot to send notifications via email when keywords are found on /r/mechmar
 ### Run it
 
     python3 run.py
+
+### Deploy it
+
+    docker-compose up --build
