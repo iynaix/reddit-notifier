@@ -1,6 +1,6 @@
 # Reddit Notifier
 
-Python bot to send notifications via email when keywords are found on Reddit.
+Python bot to send notifications via email when keywords are found on /r/mechmarket.
 
 ### Install dependencies
 
@@ -9,6 +9,7 @@ Python bot to send notifications via email when keywords are found on Reddit.
 ### Fill in the blanks
 
 -   Enter all your juicy details into a .env file
+-   Rename `keywords-sample.py` to `keywords.py` and fill in your search terms
 
 ### Run it
 
